@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Transactions | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-4">Transactions</h2>
+
+    <form id="transaction-form" method="post" class="mb-6 bg-white shadow p-4 rounded">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label>Type</label>
+                {{ form.type|add_class:"border p-2 rounded w-full" }}
+            </div>
+            <div>
+                <label>Category</label>
+                {{ form.category|add_class:"border p-2 rounded w-full" }}
+            </div>
+            <div>
+                <label>Amount</label>
+                {{ form.amount|add_class:"border p-2 rounded w-full" }}
+            </div>
+            <div>
+                <label>Date</label>
+                {{ form.date|add_class:"border p-2 rounded w-full" }}
+            </div>
+        </div>
+        <div class="mt-4">
+            <label>Description</label>
+            {{ form.description|add_class:"border p-2 rounded w-full" }}
+        </div>
+        <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+            Save
+        </button>
+    </form>
+
+    <table class="w-full border-collapse bg-white shadow rounded" id="transactions-table">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="p-2 text-left">Type</th>
+                <th class="p-2 text-left">Category</th>
+                <th class="p-2 text-left">Amount</th>
+                <th class="p-2 text-left">Date</th>
+                <th class="p-2 text-left">Description</th>
+                <th class="p-2 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr class="border-t" data-id="{{ t.id }}">
+                <td class="p-2">{{ t.type }}</td>
+                <td class="p-2">{{ t.category }}</td>
+                <td class="p-2">₹{{ t.amount }}</td>
+                <td class="p-2">{{ t.date }}</td>
+                <td class="p-2">{{ t.description }}</td>
+                <td class="p-2">
+                    <button type="button"
+                            class="text-blue-600 hover:underline edit-btn"
+                            data-id="{{ t.id }}"
+                            data-type="{{ t.type }}"
+                            data-category="{{ t.category }}"
+                            data-amount="{{ t.amount }}"
+                            data-date="{{ t.date }}"
+                            data-description="{{ t.description|escapejs }}">
+                        Edit
+                    </button>
+                    <button type="button"
+                            class="text-red-600 hover:underline delete-btn"
+                            data-id="{{ t.id }}">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="p-4 text-center text-gray-500">
+                    No transactions yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('transaction-form');
+    const tableBody = document.querySelector('#transactions-table tbody');
+
+    // Helper: Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // --- Add/Edit transaction ---
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+
+        const response = await fetch("{% url 'transactions' %}", {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+            alert(data.message);
+            form.reset();
+            const hidden = form.querySelector('input[name="transaction_id"]');
+            if (hidden) hidden.remove();
+            await refreshTransactions(); // ensure fresh buttons
+        } else {
+            alert("Error: " + JSON.stringify(data.errors));
+        }
+    });
+
+    // --- Edit button click handler ---
+    function attachEditButtons() {
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const hidden = form.querySelector('input[name="transaction_id"]');
+                if (hidden) hidden.remove();
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'transaction_id';
+                input.value = btn.dataset.id;
+                form.appendChild(input);
+
+                document.querySelector('#id_type').value = btn.dataset.type;
+                document.querySelector('#id_category').value = btn.dataset.category;
+                document.querySelector('#id_amount').value = btn.dataset.amount;
+                document.querySelector('#id_date').value = btn.dataset.date;
+                document.querySelector('#id_description').value = btn.dataset.description;
+
+                form.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    }
+
+    // --- Delete button click handler ---
+    function attachDeleteButtons() {
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm("Delete this transaction?")) return;
+
+                const response = await fetch("{% url 'transactions' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        delete_id: btn.dataset.id,
+                        action: 'delete'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'deleted') {
+                    alert(data.message);
+                    await refreshTransactions(); // instantly rebind new buttons
+                } else {
+                    alert("Delete failed.");
+                }
+            });
+        });
+    }
+
+    // --- Refresh table (used after add/edit/delete) ---
+    async function refreshTransactions() {
+        const res = await fetch("{% url 'transactions' %}");
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newBody = doc.querySelector('#transactions-table tbody');
+        tableBody.innerHTML = newBody.innerHTML;
+
+        // Reattach new event listeners for the new buttons
+        attachEditButtons();
+        attachDeleteButtons();
+    }
+
+    // Initialize listeners at page load
+    attachEditButtons();
+    attachDeleteButtons();
+});
+</script>
+{% endblock %}

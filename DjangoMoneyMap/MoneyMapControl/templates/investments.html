@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Investments | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-4">Investments</h2>
+
+    <div class="bg-white shadow p-4 rounded mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-2">
+            <input type="text" id="inv-name" placeholder="Investment Name" class="border p-2 rounded w-full">
+            <select id="inv-type" class="border p-2 rounded w-full">
+                <option value="Stock">Stock</option>
+                <option value="Mutual Fund">Mutual Fund</option>
+                <option value="Crypto">Crypto</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="number" id="inv-quantity" placeholder="Quantity" class="border p-2 rounded w-full">
+            <input type="number" id="inv-purchase" placeholder="Purchase Price" class="border p-2 rounded w-full">
+            <input type="number" id="inv-current" placeholder="Current Price" class="border p-2 rounded w-full">
+            <button id="add-investment-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                Add
+            </button>
+        </div>
+    </div>
+
+    <div id="investment-list" class="space-y-4">
+        {% for inv in investments %}
+        <div class="bg-white shadow p-4 rounded" data-id="{{ inv.id }}">
+            <div class="flex justify-between mb-2">
+                <span class="font-semibold">{{ inv.name }} ({{ inv.type }})</span>
+                <button class="text-red-600 hover:underline delete-investment">Delete</button>
+            </div>
+            <div class="text-sm mb-2">
+                Quantity: {{ inv.quantity }} | Purchase: ₹{{ inv.purchase_price }} | Current: ₹{{ inv.current_price }} | Profit: ₹{{ inv.gain_loss|floatformat:2 }} ({{ inv.profit_percentage|floatformat:2 }}%)
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="number" class="border p-1 w-24 rounded update-current" placeholder="Update ₹">
+                <button class="bg-green-600 text-white px-2 py-1 rounded update-investment">Update</button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-gray-500">No investments yet.</p>
+        {% endfor %}
+    </div>
+
+    <div class="mt-10 bg-white shadow p-4 rounded w-96 mx-auto">
+        <h3 class="text-xl font-semibold mb-4 text-center">Profit Insights (%)</h3>
+        <canvas id="profit-chart" width="300" height="300"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let profitChart;
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(cookie => {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.split('=')[1]);
+            }
+        });
+    }
+    return cookieValue;
+}
+
+async function refreshInvestments() {
+    const res = await fetch("{% url 'investments' %}");
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    document.getElementById('investment-list').innerHTML = doc.getElementById('investment-list').innerHTML;
+
+    const labels = [];
+    const data = [];
+    doc.querySelectorAll('[data-id]').forEach(div => {
+        labels.push(div.querySelector('.font-semibold').innerText);
+        const profitText = div.querySelector('.text-sm').innerText.match(/\(([-\d.]+)%\)/);
+        data.push(profitText ? parseFloat(profitText[1]) : 0);
+    });
+
+    if (profitChart) profitChart.destroy();
+    const ctx = document.getElementById('profit-chart').getContext('2d');
+    profitChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: 'Profit %', data: data, backgroundColor: '#4ade80' }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('add-investment-btn').addEventListener('click', async () => {
+        const name = document.getElementById('inv-name').value.trim();
+        const type = document.getElementById('inv-type').value;
+        const quantity = document.getElementById('inv-quantity').value.trim();
+        const purchase = document.getElementById('inv-purchase').value.trim();
+        const current = document.getElementById('inv-current').value.trim();
+
+        if (!name || !quantity || !purchase) return alert('Enter all required fields.');
+
+        await fetch("{% url 'investments' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ action: 'add', name, type, quantity, purchase_price: purchase, current_price: current })
+        });
+        refreshInvestments();
+    });
+
+    document.getElementById('investment-list').addEventListener('click', async (e) => {
+        const parent = e.target.closest('[data-id]');
+        if (!parent) return;
+        const id = parent.dataset.id;
+
+        if (e.target.classList.contains('delete-investment')) {
+            if (!confirm('Delete this investment?')) return;
+            await fetch("{% url 'investments' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ action: 'delete', id })
+            });
+            refreshInvestments();
+        }
+
+        if (e.target.classList.contains('update-investment')) {
+            const newCurrent = parent.querySelector('.update-current').value.trim();
+            if (!newCurrent) return;
+            await fetch("{% url 'investments' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ action: 'update', id, current_price: newCurrent })
+            });
+            refreshInvestments();
+        }
+    });
+
+    refreshInvestments();
+});
+</script>
+{% endblock %}

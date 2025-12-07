@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 px-8 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome, <span class="text-blue-800">{{ user.username }}</span></h1>
+    <p class="text-gray-600 mb-8">Here's your current financial summary.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition">
+            <h2 class="text-gray-500 text-sm">Total Balance</h2>
+            <p class="text-3xl font-bold text-green-600 mt-2">₹{{ balance|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition">
+            <h2 class="text-gray-500 text-sm">Total Income</h2>
+            <p class="text-3xl font-bold text-blue-600 mt-2">₹{{ total_income|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow hover:shadow-md transition">
+            <h2 class="text-gray-500 text-sm">Total Expenses</h2>
+            <p class="text-3xl font-bold text-red-600 mt-2">₹{{ total_expense|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="mt-10">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-700">Recent Transactions</h2>
+            <a href="{% url 'transactions' %}" 
+               class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                + Add Transaction
+            </a>
+        </div>
+        <div class="overflow-x-auto bg-white rounded-xl shadow">
+            <table class="min-w-full border border-gray-200 text-sm">
+                <thead class="bg-gray-100 text-gray-700 uppercase">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Date</th>
+                        <th class="py-3 px-4 text-left">Type</th>
+                        <th class="py-3 px-4 text-left">Category</th>
+                        <th class="py-3 px-4 text-left">Amount</th>
+                        <th class="py-3 px-4 text-left">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions|slice:":5" %}
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="py-2 px-4">{{ t.date }}</td>
+                        <td class="py-2 px-4">{{ t.type }}</td>
+                        <td class="py-2 px-4">{{ t.category }}</td>
+                        <td class="py-2 px-4 {% if t.type == 'Expense' %}text-red-500{% else %}text-green-600{% endif %}">
+                            ₹{{ t.amount|floatformat:2 }}
+                        </td>
+                        <td class="py-2 px-4">{{ t.description }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-500">No transactions yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-10">
+        <div class="bg-white shadow p-4 rounded">
+            <h3 class="font-semibold mb-4">Budgets</h3>
+            {% for b in budgets %}
+            <div class="mb-4">
+                <div class="flex justify-between mb-1">
+                    <span>{{ b.category }}</span>
+                    <span>₹{{ b.spent|floatformat:2 }}/₹{{ b.limit|floatformat:2 }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded h-3 overflow-hidden">
+                    {% if b.exceeded %}
+                    <div class="h-3 bg-red-500 rounded max-w-full" 
+                        class="w-[{{ b.percent }}%]"></div>
+                    {% else %}
+                    <div class="h-3 bg-green-500 rounded max-w-full"
+                        class="w-[{{ b.percent }}%]"></div>
+                    {% endif %}
+                </div>
+                {% if b.exceeded %}
+                    <p class="text-red-600 text-sm mt-1">Budget exceeded!</p>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-gray-500">No budgets yet.</p>
+            {% endfor %}
+            <a href="{% url 'budget' %}" 
+                class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    + Update/Add
+            </a>
+        </div>
+
+        <div class="bg-white shadow p-4 rounded">
+            <h3 class="font-semibold mb-4">Savings Goals</h3>
+            {% for g in goals %}
+            <div class="mb-4">
+                <div class="flex justify-between mb-1">
+                    <span>{{ g.name }}</span>
+                    <span>₹{{ g.saved_amount|floatformat:2 }}/₹{{ g.target_amount|floatformat:2 }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded h-3">
+                    <div class="h-3 bg-blue-500 rounded" data-progress="{{ g.progress }}"></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500">No goals yet.</p>
+            {% endfor %}
+            <a href="{% url 'goals' %}" 
+                class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+                    + Update/Add
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white shadow p-4 rounded mt-10">
+        <h3 class="font-semibold mb-4">Investments</h3>
+        <div class="overflow-x-auto">
+            <table class="table-auto w-full text-left">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Purchase Price</th>
+                        <th>Current Price</th>
+                        <th>Current Value</th>
+                        <th>Gain/Loss</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in investments %}
+                    <tr>
+                        <td>{{ inv.name }}</td>
+                        <td>{{ inv.type }}</td>
+                        <td>{{ inv.quantity }}</td>
+                        <td>₹{{ inv.purchase_price|floatformat:2 }}</td>
+                        <td>₹{{ inv.current_price|floatformat:2 }}</td>
+                        <td>₹{{ inv.current_value|floatformat:2 }}</td>
+                        <td class="{% if inv.gain_loss >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            ₹{{ inv.gain_loss|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-gray-500 text-center">No investments yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 w-80 mx-auto">
+            <canvas id="investment-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white shadow p-4 rounded mt-10">
+        <h3 class="font-semibold mb-4">Insights</h3>
+        <p>Total Invested: ₹{{ total_invested|floatformat:2 }}</p>
+        <p>Current Value: ₹{{ total_current|floatformat:2 }}</p>
+        <p>Total Gain/Loss: 
+            <span class="{% if net_gain_loss >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                ₹{{ net_gain_loss|floatformat:2 }}
+            </span>
+        </p>
+    </div>
+    <div class="bg-white shadow p-6 rounded mt-10">
+        <h3 class="font-semibold mb-4 text-xl">Today's Financial Blogs</h3>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            {% for blog in blogs %}
+            <a href="{% url 'blog_detail' blog.slug %}" class="block border rounded-lg p-4 hover:shadow-md transition">
+                <h4 class="font-semibold text-gray-700 mb-2">{{ blog.title }}</h4>
+                <p class="text-gray-600 text-sm">
+                    {{ blog.excerpt }}
+                </p>
+            </a>
+            {% empty %}
+            <p class="text-gray-500">No blogs available right now.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script id="chart-data" type="application/json">
+    {{ investment_chart_data|safe }}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-percent]').forEach(el => {
+        el.style.width = (el.dataset.percent || 0) + '%';
+    });
+
+    document.querySelectorAll('[data-progress]').forEach(el => {
+        el.style.width = (el.dataset.progress || 0) + '%';
+    });
+
+    const chartData = JSON.parse(document.getElementById('chart-data').textContent);
+    const ctx = document.getElementById('investment-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: chartData.map(d => d.name),
+            datasets: [{
+                data: chartData.map(d => d.value),
+                backgroundColor: ['#4ade80','#f87171','#60a5fa','#facc15','#a78bfa','#f472b6']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+});
+</script>
+{% endblock %}

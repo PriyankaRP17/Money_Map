@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Budget | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-4">Budget Planner</h2>
+
+    <div class="mb-6 bg-white shadow p-4 rounded">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" id="budget-category" placeholder="Category"
+                   class="border p-2 rounded w-full">
+            <input type="number" id="budget-limit" placeholder="Limit (₹)"
+                   class="border p-2 rounded w-full">
+            <button id="add-budget-btn"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                Add Budget
+            </button>
+        </div>
+    </div>
+
+    <div id="budget-list" class="space-y-4">
+        {% for b in budgets %}
+        <div class="bg-white shadow p-4 rounded flex flex-col" data-id="{{ b.id }}">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-semibold">{{ b.category }}</span>
+                <button class="text-red-600 hover:underline delete-budget">Delete</button>
+            </div>
+            <div class="text-sm mt-1">
+                Spent: ₹{{ b.spent }} / Limit: ₹{{ b.limit }}
+                {% if b.spent > b.limit %}
+                    <span class="text-red-600 font-bold ml-2">Budget Exceeded!</span>
+                {% endif %}
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+                <input type="number" class="border p-1 w-24 rounded update-spent" placeholder="Add ₹">
+                <button class="bg-green-600 text-white px-2 py-1 rounded update-budget">Update</button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-gray-500">No budgets yet.</p>
+        {% endfor %}
+    </div>
+
+    <div class="mt-10 bg-white shadow p-4 rounded w-80 mx-auto">
+        <h3 class="text-xl font-semibold mb-4 text-center">Budget Distribution</h3>
+        <canvas id="budget-pie-chart" width="300" height="300"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let pieChart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const budgetList = document.getElementById('budget-list');
+        const addBtn = document.getElementById('add-budget-btn');
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                document.cookie.split(';').forEach(cookie => {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.split('=')[1]);
+                    }
+                });
+            }
+            return cookieValue;
+        }
+
+        async function refreshBudgets() {
+            const res = await fetch("{% url 'budget' %}");
+            const html = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newBudgets = doc.getElementById('budget-list');
+            budgetList.innerHTML = newBudgets.innerHTML;
+
+            const newLabels = [];
+            const newData = [];
+            doc.querySelectorAll('[data-id]').forEach(div => {
+                newLabels.push(div.querySelector('span').innerText);
+                const spentText = div.querySelector('.text-sm').innerText.match(/Spent: ₹([\d.]+)/);
+                newData.push(spentText ? parseFloat(spentText[1]) : 0);
+            });
+
+            if (pieChart) pieChart.destroy();
+            const ctx = document.getElementById('budget-pie-chart').getContext('2d');
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: newLabels,
+                    datasets: [{
+                        data: newData,
+                        backgroundColor: ['#4ade80','#f87171','#60a5fa','#facc15','#a78bfa','#f472b6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ₹' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        addBtn.addEventListener('click', async () => {
+            const category = document.getElementById('budget-category').value.trim();
+            const limit = document.getElementById('budget-limit').value.trim();
+            if (!category || !limit) return alert("Please enter category and limit.");
+
+            const res = await fetch("{% url 'budget' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ action: 'add', category, limit })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                document.getElementById('budget-category').value = '';
+                document.getElementById('budget-limit').value = '';
+                await refreshBudgets();
+            } else alert("Failed to add budget.");
+        });
+
+        budgetList.addEventListener('click', async (e) => {
+            const parent = e.target.closest('[data-id]');
+            if (!parent) return;
+            const id = parent.dataset.id;
+
+            if (e.target.classList.contains('delete-budget')) {
+                if (!confirm("Delete this budget?")) return;
+                const res = await fetch("{% url 'budget' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ action: 'delete', id })
+                });
+                const data = await res.json();
+                if (data.status === 'deleted') await refreshBudgets();
+                return;
+            }
+
+            if (e.target.classList.contains('update-budget')) {
+                const input = parent.querySelector('.update-spent');
+                if (!input || !input.value.trim()) return alert("Enter amount to add");
+                const addAmount = input.value.trim();
+
+                const res = await fetch("{% url 'budget' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ action: 'update', id, spent_amount: addAmount })
+                });
+                const data = await res.json();
+                if (data.status === 'updated') {
+                    input.value = '';
+                    await refreshBudgets();
+                }
+                return;
+            }
+        });
+
+        refreshBudgets();
+    });
+</script>
+{% endblock %}

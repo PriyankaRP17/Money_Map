@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10 space-y-8">
+    <h2 class="text-3xl font-bold mb-6">Reports & Analytics</h2>
+
+    <div class="bg-white shadow p-6 rounded w-80 mx-auto">
+        <h3 class="font-semibold mb-4">Monthly Income vs Expenses</h3>
+        <canvas id="monthlyChart"></canvas>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const months = JSON.parse('{{ months|escapejs }}');
+const incomeValues = JSON.parse('{{ income_values|escapejs }}');
+const expenseValues = JSON.parse('{{ expense_values|escapejs }}');
+
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: months,
+        datasets: [
+            {
+                label: 'Income',
+                data: incomeValues,
+                backgroundColor: '#4ade80'
+            },
+            {
+                label: 'Expense',
+                data: expenseValues,
+                backgroundColor: '#f87171'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+const categories = JSON.parse('{{ categories|escapejs }}');
+const categoryAmounts = JSON.parse('{{ category_amounts|escapejs }}');
+
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(categoryCtx, {
+    type: 'pie',
+    data: {
+        labels: categories,
+        datasets: [{
+            data: categoryAmounts,
+            backgroundColor: ['#4ade80','#f87171','#60a5fa','#facc15','#a78bfa','#f472b6']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+</script>
+{% endblock %}

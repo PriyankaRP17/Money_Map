@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Goals | MoneyMap{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-6">Savings Goals</h2>
+
+    <div class="bg-white shadow p-4 rounded mb-6">
+        <div class="grid md:grid-cols-4 gap-4">
+            <input type="text" id="goal-name" placeholder="Goal Name" class="border p-2 rounded w-full">
+            <input type="number" id="goal-target" placeholder="Target Amount (₹)" class="border p-2 rounded w-full">
+            <input type="number" id="goal-saved" placeholder="Saved Amount (₹)" class="border p-2 rounded w-full">
+            <button id="add-goal-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                Add Goal
+            </button>
+        </div>
+    </div>
+
+    <div id="goal-list" class="space-y-4">
+        {% for g in goals %}
+        <div class="bg-white shadow p-4 rounded" data-id="{{ g.id }}">
+            <div class="flex justify-between mb-2">
+                <span class="font-semibold">{{ g.name }}</span>
+                <button class="text-red-600 hover:underline delete-goal">Delete</button>
+            </div>
+
+            <div class="text-sm text-gray-600 mb-2">
+                Saved ₹{{ g.saved_amount|floatformat:2 }} / ₹{{ g.target_amount|floatformat:2 }} 
+                ({{ g.progress|default:0|floatformat:0 }}%)
+            </div>
+
+            <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+                <div class="bg-green-500 h-3 rounded-full" data-progress="{{ g.progress|default:0 }}"></div>
+            </div>
+
+            <p class="goal-achievement text-green-600 font-semibold text-sm mt-1 {% if g.progress < 100 %}hidden{% endif %}">
+                🎉 Hurray! You achieved your goal!
+            </p>
+
+            <div class="flex items-center gap-2 mt-2">
+                <input type="number" class="border p-1 w-24 rounded update-saved" placeholder="Add ₹">
+                <button class="bg-green-600 text-white px-2 py-1 rounded update-goal">Update</button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-gray-500">No goals yet.</p>
+        {% endfor %}
+    </div>
+
+    <div class="mt-10 bg-white shadow p-4 rounded w-80 mx-auto">
+        <h3 class="text-xl font-semibold mb-4">Goal Distribution</h3>
+        <canvas id="goal-pie-chart" width="300" height="300"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let goalChart;
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(cookie => {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.split('=')[1]);
+            }
+        });
+    }
+    return cookieValue;
+} 
+
+function updateProgressBars() {
+    document.querySelectorAll('[data-progress]').forEach(el => {
+        const progress = parseFloat(el.dataset.progress) || 0;
+        el.style.width = progress + '%';
+
+        const container = el.closest('[data-id]');
+        const achievement = container.querySelector('.goal-achievement');
+        if (achievement) {
+            if (progress >= 100) {
+                achievement.classList.remove('hidden');
+            } else {
+                achievement.classList.add('hidden');
+            }
+        }
+    });
+}
+
+async function refreshGoals() {
+    const res = await fetch("{% url 'goals' %}");
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    document.getElementById('goal-list').innerHTML = doc.getElementById('goal-list').innerHTML;
+
+    updateProgressBars();
+    updatePieChart();
+}
+
+function updatePieChart() {
+    const goals = Array.from(document.querySelectorAll('[data-id]')).map(div => {
+        const name = div.querySelector('.font-semibold').innerText;
+        const savedText = div.querySelector('.text-sm').innerText.match(/₹([\d.,]+)/);
+        const saved = savedText ? parseFloat(savedText[1].replace(/,/g, '')) : 0;
+        return { name, saved };
+    });
+
+    const labels = goals.map(g => g.name);
+    const data = goals.map(g => g.saved);
+
+    if (goalChart) goalChart.destroy();
+    const ctx = document.getElementById('goal-pie-chart').getContext('2d');
+    goalChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#4ade80','#60a5fa','#facc15','#f472b6','#a78bfa']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateProgressBars();
+    updatePieChart();
+
+    document.getElementById('add-goal-btn').addEventListener('click', async () => {
+        const name = document.getElementById('goal-name').value.trim();
+        const target = document.getElementById('goal-target').value.trim();
+        const saved = document.getElementById('goal-saved').value.trim() || 0;
+
+        if (!name || !target) return alert('Please enter goal name and target.');
+
+        await fetch("{% url 'goals' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ action: 'add', name, target_amount: target, saved_amount: saved })
+        });
+
+        document.getElementById('goal-name').value = '';
+        document.getElementById('goal-target').value = '';
+        document.getElementById('goal-saved').value = '';
+        refreshGoals();
+    });
+
+    document.getElementById('goal-list').addEventListener('click', async (e) => {
+        const parent = e.target.closest('[data-id]');
+        if (!parent) return;
+        const id = parent.dataset.id;
+
+        if (e.target.classList.contains('delete-goal')) {
+            if (!confirm('Delete this goal?')) return;
+            await fetch("{% url 'goals' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({action: 'delete', id})
+            });
+            refreshGoals();
+        }
+
+        if (e.target.classList.contains('update-goal')) {
+            const input = parent.querySelector('.update-saved');
+            let addedAmount = parseFloat(input.value);
+            if (isNaN(addedAmount) || addedAmount <= 0) return alert('Enter a valid positive amount');
+
+            await fetch("{% url 'goals' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({action: 'update', id, added_amount: addedAmount})
+            });
+
+            input.value = '';
+            refreshGoals();
+        }
+    });
+});
+</script>
+{% endblock %}

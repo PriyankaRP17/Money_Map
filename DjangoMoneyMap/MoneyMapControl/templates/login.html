@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+Login - MoneyMap
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.logo-text {
+    background: linear-gradient(90deg, #861616 0%, #2b6011 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;        
+    color: transparent;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mt-6 flex-col">
+    <div class="flex-1 flex items-center justify-center">
+        <div class="w-[800px] max-w-md shadow-lg rounded-2xl overflow-hidden p-10 bg-white mt-8">
+
+            <div class="mb-3 text-center">
+                <h2 class="logo-text text-2xl md:text-3xl font-bold flex items-center justify-center text-blue-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v8m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    MoneyMap
+                </h2>
+            </div>
+
+            <h3 class="text-xl font-bold mb-6 text-center">Login</h3>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="bg-red-100 text-red-700 p-3 rounded">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}<br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block font-semibold mb-1">Username</label>
+                    {{ form.username|add_class:"w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500" }}
+                    {% if form.username.errors %}
+                        <p class="text-red-600 text-sm mt-1">
+                            {% for error in form.username.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="relative">
+                    <label for="{{ form.password.id_for_label }}" class="block font-semibold mb-1">Password</label>
+                    {{ form.password|add_class:"w-full border border-gray-300 rounded px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-sky-500" }}
+                    <button type="button" 
+                            class="absolute inset-y-0 right-2 flex items-center text-gray-500 text-xl mt-7" 
+                            onclick="togglePassword('id_password', this)">
+                        👁
+                    </button>
+                    {% if form.password.errors %}
+                        <p class="text-red-600 text-sm mt-1">
+                            {% for error in form.password.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-6 py-2 rounded w-1/2">
+                        Login
+                    </button>
+                </div>
+            </form>
+
+            <div class="flex justify-between mt-4 text-sm">
+                <p>New User? <a href="{% url 'register' %}" class="text-sky-600 hover:underline">Register</a></p>
+                <a href="{% url 'forgot_password' %}" class="text-sky-600 hover:underline">Forgot Password?</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(fieldId, btn) {
+        const field = document.getElementById(fieldId);
+        field.type = field.type === "password" ? "text" : "password";
+        btn.classList.toggle('text-gray-500'); 
+        btn.classList.toggle('text-gray-900');  
+    }
+</script>
+{% endblock %}
