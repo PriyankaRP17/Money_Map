@@ -121,8 +121,7 @@ python-dotenv==1.0.1
 python-gnupg==0.5.5
 python-http-client==3.3.7
 pytz==2025.2
-pywin32==311
-pywin32-ctypes==0.2.3
+
 pyzbar==0.1.9
 qrcode==8.2
 rcssmin==1.2.1
