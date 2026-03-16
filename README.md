@@ -196,8 +196,8 @@ pip
 
 ```bash
 # Clone the repo
-git clone https://github.com/PriyankaRS17/.git
-cd moneymap
+git clone https://github.com/PriyankaRS17/Money_Map.git
+cd DjangoMoneyMap
 
 # Install dependencies
 pip install -r requirements.txt
@@ -256,4 +256,5 @@ Open **http://127.0.0.1:8000**
 ## Author
 
 **Priyanka R P**
-[LinkedIn](https://www.linkedin.com/in/priyanka-rp) · [GitHub](https://github.com/PriyankaRS17) · priyankapremnath17@gmail.com
+priyankapremnath17@gmail.com
+[LinkedIn](https://www.linkedin.com/in/priyanka-rp) · [GitHub](https://github.com/PriyankaRS17) · 
