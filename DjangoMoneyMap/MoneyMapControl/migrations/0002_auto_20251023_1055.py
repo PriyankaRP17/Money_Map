@@ -1,4 +1,4 @@
-from django.db import migrations, models
+from django.db import migrations
 
 class Migration(migrations.Migration):
 
@@ -7,9 +7,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='goal',
-            name='target_amount',
-            field=models.DecimalField(default=0, max_digits=12, decimal_places=2),
-        ),
+        # removed duplicate field - target_amount already exists in 0001
     ]
