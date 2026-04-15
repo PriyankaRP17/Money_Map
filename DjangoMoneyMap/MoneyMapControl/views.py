@@ -409,10 +409,12 @@ def reports(request):
         for c in category_data
     ]
 
+    from django.db.models.functions import TruncMonth
+
     month_data = (
         Transaction.objects
         .filter(user=user)
-        .extra(select={'month': "strftime('%%Y-%%m', date)"})
+        .annotate(month=TruncMonth('date'))
         .values('month', 'type')
         .annotate(total=Sum('amount'))
         .order_by('month')
@@ -430,8 +432,12 @@ def reports(request):
     income_values = [monthly_chart[m]['Income'] for m in months]
     expense_values = [monthly_chart[m]['Expense'] for m in months]
 
+    categories = [c["category"] for c in category_chart]
+    category_amounts = [c["total"] for c in category_chart]
+
     context = {
-        'category_chart': json.dumps(category_chart),
+        'categories': json.dumps(categories),
+        'category_amounts': json.dumps(category_amounts),
         'months': json.dumps(months),
         'income_values': json.dumps(income_values),
         'expense_values': json.dumps(expense_values),
