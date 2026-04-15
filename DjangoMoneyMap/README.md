@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Framework-Django-092E20?logo=django&logoColor=white)
-![SQLite](https://img.shields.io/badge/DB-SQLite-003B57?logo=sqlite&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL-4169E1?logo=postgresql logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/UI-Bootstrap_5-7952B3?logo=bootstrap&logoColor=white)
 ![ChartJS](https://img.shields.io/badge/Charts-Chart.js-FF6384?logo=chartdotjs&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
@@ -20,22 +20,22 @@ Most people lose track of their finances because their money data is scattered �
 ## Screenshots
 
 ### Login Page
-![Login](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Login.png)
+![Login](DjangoMoneyMap/Output_Screenshots/Login.png)
 
 ### Dashboard
-![Dashboard](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Dashboard.png)
+![Dashboard](DjangoMoneyMap/Output_Screenshots/Dashboard.png)
 
 ### Transactions Page
-![Transactions](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Transactions.png)
+![Transactions](DjangoMoneyMap/Output_Screenshots/Transactions.png)
 
 ### Budget Page
-![Budget](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Budget.png)
+![Budget](DjangoMoneyMap/Output_Screenshots/Budget.png)
 
 ### Goals Page
-![Goals](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Goals.png)
+![Goals](DjangoMoneyMap/Output_Screenshots/Goals.png)
 
 ### Investments Page
-![Investments](DjangoMoneyMap/DjangoMoneyMap/Output_Screenshots/Investments.png)
+![Investments](DjangoMoneyMap/Output_Screenshots/Investments.png)
 
 ---
 
@@ -78,49 +78,55 @@ https://money-map-kz82.onrender.com
 ```
 MONEYMAP/
 │
-├── DjangoMoneyMap/             # Django project config
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-│
-├── MoneyMapControl/            # Main application — all features in one app
-│   ├── migrations/
-│   ├── static/
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── login.html
-│   │   ├── register.html
-│   │   ├── forgot_password.html
-│   │   ├── dashboard.html
-│   │   ├── transactions.html
-│   │   ├── budget.html
-│   │   ├── investments.html
-│   │   ├── goals.html
-│   │   ├── reports.html
-│   │   └── blog_detail.html
-│   ├── admin.py
-│   ├── apps.py
-│   ├── forms.py                # All Django forms
-│   ├── models.py               # All models — Transaction, Budget, Investment, Goal, Blog
-│   ├── signals.py              # Django signals (e.g. auto-create profile on user creation)
-│   ├── tests.py
-│   ├── urls.py
-│   └── views.py                # All view logic
-│
-├── static/
-├── staticfiles/
-├── Output_Screenshots/         # UI screenshots
-│   ├── Dashboard.png
-│   ├── Budget.png
-│   ├── Goals.png
-│   ├── Investments.png
-│   ├── Login.png
-│   └── Transactions.png
-│
-├── db.sqlite3
-├── manage.py
-└── requirements.txt
+── DjangoMoneyMap/                  # Django inner project folder
+   ├── DjangoMoneyMap/              # Django project config
+   │   ├── settings.py
+   │   ├── urls.py
+   │   ├── asgi.py
+   │   └── wsgi.py
+   │
+   ├── MoneyMapControl/             # Main application
+   │   ├── migrations/
+   │   ├── static/
+   │   ├── templates/
+   │   │   ├── base.html
+   │   │   ├── login.html
+   │   │   ├── register.html
+   │   │   ├── forgot_password.html
+   │   │   ├── dashboard.html
+   │   │   ├── transactions.html
+   │   │   ├── budget.html
+   │   │   ├── investments.html
+   │   │   ├── goals.html
+   │   │   ├── reports.html
+   │   │   └── blog_detail.html
+   │   ├── admin.py
+   │   ├── apps.py
+   │   ├── forms.py
+   │   ├── models.py
+   │   ├── signals.py
+   │   ├── tests.py
+   │   ├── urls.py
+   │   └── views.py
+   │
+   ├── Output_Screenshots/          # UI screenshots
+   │   ├── Dashboard.png
+   │   ├── Budget.png
+   │   ├── Goals.png
+   │   ├── Investments.png
+   │   ├── Login.png
+   │   └── Transactions.png
+   │
+   ├── static/
+   ├── staticfiles/
+   ├── .env
+   ├── .gitignore
+   ├── build.sh
+   ├── manage.py
+   ├── README.md
+   └── requirements.txt
+
+
 ```
 
 ---
@@ -259,7 +265,6 @@ Open **http://127.0.0.1:8000**
 - [ ] Export transactions as CSV or PDF
 - [ ] Email alerts when budget limit is exceeded
 - [ ] Write Django `TestCase` unit tests for budget and investment calculation logic
-- [ ] Dockerize and deploy to Render / AWS
 
 ---
 
