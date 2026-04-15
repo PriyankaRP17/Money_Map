@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Framework-Django-092E20?logo=django&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL-4169E1?logo=postgresql logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/UI-Bootstrap_5-7952B3?logo=bootstrap&logoColor=white)
 ![ChartJS](https://img.shields.io/badge/Charts-Chart.js-FF6384?logo=chartdotjs&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
