@@ -422,15 +422,17 @@ def reports(request):
 
     monthly_chart = {}
     for entry in month_data:
-        month = entry['month']
+        if entry['month'] is None:  # ← add this check
+            continue
+        month = entry['month'].strftime('%Y-%m')
         typ = entry['type']
         if month not in monthly_chart:
             monthly_chart[month] = {'Income': 0, 'Expense': 0}
         monthly_chart[month][typ] = float(entry['total'])
 
     months = list(monthly_chart.keys())
-    income_values = [monthly_chart[m]['Income'] for m in months]
-    expense_values = [monthly_chart[m]['Expense'] for m in months]
+    income_values = [monthly_chart[m].get('Income', 0) for m in months]
+    expense_values = [monthly_chart[m].get('Expense', 0) for m in months]
 
     categories = [c["category"] for c in category_chart]
     category_amounts = [c["total"] for c in category_chart]
