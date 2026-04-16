@@ -40,7 +40,8 @@ Most people lose track of their finances because their money data is scattered �
 ---
 
 ## Live Demo
-https://money-map-kz82.onrender.com
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?logo=render)](https://money-map-kz82.onrender.com)
+
 
 ## Features
 
@@ -78,7 +79,7 @@ https://money-map-kz82.onrender.com
 ```
 MONEYMAP/
 │
-── DjangoMoneyMap/                  # Django inner project folder
+└── DjangoMoneyMap/                 # Django inner project folder
    ├── DjangoMoneyMap/              # Django project config
    │   ├── settings.py
    │   ├── urls.py
@@ -196,15 +197,23 @@ balance = total_income - total_expenses
 
 ## Environment Variables
 Create a `.env` file in the root:
+```env
 SECRET_KEY=your-django-secret-key
 DEBUG=False
 ALLOWED_HOSTS=your-domain.com
+DB_NAME=your-db-name
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_HOST=localhost
+DB_PORT=5432
+```
 
 ### Prerequisites
 
 ```bash
 Python 3.8+
 pip
+Postgresql 17 or 18
 ```
 
 ### Installation
@@ -225,7 +234,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Open **http://127.0.0.1:8000**
+Localhost: Open **http://127.0.0.1:8000**
 
 ---
 
@@ -272,4 +281,4 @@ Open **http://127.0.0.1:8000**
 
 **Priyanka R P**
 priyankapremnath17@gmail.com
-[LinkedIn](https://www.linkedin.com/in/priyanka-rp) · [GitHub](https://github.com/PriyankaRS17) · 
+[LinkedIn](https://www.linkedin.com/in/priyanka-rp) · [GitHub](https://github.com/PriyankaRS17)  
